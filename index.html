@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背单词</title>
+</head>
+<body>
+    <h1>背单词</h1>
+    
+    <div id="wordListContainer">
+        <h2>背单词</h2>
+        <button id="generateWords">生成单词</button>
+        <button id="speakWord">朗读</button>
+        <div id="generatedWord"></div>
+    </div>
+
+    <div id="wordManagementContainer">
+        <h2>单词管理</h2>
+        <input type="text" id="newWord" placeholder="输入新单词">
+        <button type="submit" id="addWordButton">添加</button>
+        <ul id="wordList"></ul>
+        <button id="deleteSelectedWords">删除选中单词</button>
+    </div>
+
+    <div id="dictationContainer">
+        <h2>听写</h2>
+        <button id="startDictation">开始听写</button>
+        <div id="dictationStatus">听写进度：0 / 0</div>
+        <button id="playCurrentWord">播放单词</button>
+        <div id="dictationWord" style="display: none;"></div>
+        <input type="text" id="dictationInput" placeholder="输入听写单词">
+        <button id="checkAnswer">确定</button>
+        <button id="nextDictationWord" style="display: none;">下一个单词</button>
+    </div>
+
+    <script src="your_word_library.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const generatedWordElement = document.getElementById('generatedWord');
+            const wordListElement = document.getElementById('wordList');
+            const dictationWordElement = document.getElementById('dictationWord');
+            const dictationStatusElement = document.getElementById('dictationStatus');
+            const dictationInputElement = document.getElementById('dictationInput');
+            const startDictationButton = document.getElementById('startDictation');
+            const checkAnswerButton = document.getElementById('checkAnswer');
+            const nextDictationWordButton = document.getElementById('nextDictationWord');
+            const playCurrentWordButton = document.getElementById('playCurrentWord');
+
+            let wordsToDictate = [];
+            let currentWordIndex = 0;
+            let correctAnswers = 0;
+
+            function renderWordList() {
+                wordListElement.innerHTML = '';
+                words.forEach(function(word) {
+                    const listItem = document.createElement('li');
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = word;
+                    listItem.appendChild(checkbox);
+                    listItem.appendChild(document.createTextNode(word));
+                    wordListElement.appendChild(listItem);
+                });
+            }
+
+            document.getElementById('generateWords').addEventListener('click', function() {
+                const randomIndex = Math.floor(Math.random() * words.length);
+                const randomWord = words[randomIndex];
+                console.log('生成的随机单词：', randomWord);
+                generatedWordElement.textContent = randomWord;
+            });
+
+            document.getElementById('speakWord').addEventListener('click', function() {
+                const currentWord = generatedWordElement.textContent.trim();
+                const utterance = new SpeechSynthesisUtterance(currentWord);
+                utterance.lang = 'en-US';
+                speechSynthesis.speak(utterance);
+            });
+
+            document.getElementById('addWordButton').addEventListener('click', function(event) {
+                event.preventDefault(); 
+                const newWordInput = document.getElementById('newWord');
+                const newWord = newWordInput.value.trim(); 
+                if (newWord !== '') {
+                    words.push(newWord); 
+                    renderWordList(); 
+                    newWordInput.value = ''; 
+                }
+            });
+
+            document.getElementById('deleteSelectedWords').addEventListener('click', function() {
+                const checkboxes = document.querySelectorAll('#wordList input[type="checkbox"]:checked');
+                checkboxes.forEach(function(checkbox) {
+                    const wordToDelete = checkbox.value;
+                    const index = words.indexOf(wordToDelete);
+                    if (index !== -1) {
+                        words.splice(index, 1);
+                    }
+                });
+                renderWordList();
+            });
+
+            startDictationButton.addEventListener('click', function() {
+                const numWords = parseInt(prompt("请输入听写单词的数量（不能大于单词库的上限）："));
+                if (isNaN(numWords) || numWords <= 0 || numWords > words.length) {
+                    alert("请输入有效的听写单词数量！");
+                    return;
+                }
+                wordsToDictate = [];
+                for (let i = 0; i < numWords; i++) {
+                    const randomIndex = Math.floor(Math.random() * words.length);
+                    wordsToDictate.push(words[randomIndex]);
+                }
+                console.log("听写单词列表：", wordsToDictate);
+                currentWordIndex = 0;
+                correctAnswers = 0;
+                dictationWordElement.textContent = wordsToDictate[currentWordIndex];
+                dictationWordElement.style.display = 'none';
+                dictationInputElement.value = '';
+               dictationStatusElement.textContent = `听写进度：${currentWordIndex + 1} / ${wordsToDictate.length}`;
+                startDictationButton.style.display = 'none';
+                checkAnswerButton.style.display = 'inline';
+                playCurrentWordButton.style.display = 'inline';
+            });
+
+            playCurrentWordButton.addEventListener('click', function() {
+                const currentWord = dictationWordElement.textContent.trim();
+                const utterance = new SpeechSynthesisUtterance(currentWord);
+                utterance.lang = 'en-US';
+                speechSynthesis.speak(utterance);
+            });
+
+            checkAnswerButton.addEventListener('click', function() {
+                const userInput = dictationInputElement.value.trim().toLowerCase();
+                const currentWord = wordsToDictate[currentWordIndex].toLowerCase();
+                if (userInput === currentWord) {
+                    alert("答案正确！");
+                    correctAnswers++;
+                } else {
+                    alert(`答案错误！正确答案是：${wordsToDictate[currentWordIndex]}`);
+                }
+                currentWordIndex++;
+                if (currentWordIndex < wordsToDictate.length) {
+                    dictationWordElement.textContent = wordsToDictate[currentWordIndex];
+                    dictationStatusElement.textContent = `听写进度：${currentWordIndex + 1} / ${wordsToDictate.length}`;
+                    dictationInputElement.value = '';
+                } else {
+                    alert(`听写结束！您的正确率为：${(correctAnswers / wordsToDictate.length) * 100}%`);
+                    startDictationButton.style.display = 'inline';
+                    checkAnswerButton.style.display = 'none';
+                    playCurrentWordButton.style.display = 'none';
+                    dictationWordElement.style.display = 'block';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
